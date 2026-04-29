@@ -1,0 +1,3 @@
+{
+  "extends": "@tome/ts-config/base.json"
+}

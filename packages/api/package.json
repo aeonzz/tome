@@ -1,0 +1,28 @@
+{
+  "name": "@tome/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@prisma/client": "catalog:",
+    "@tome/auth": "workspace:*",
+    "@tome/db": "workspace:*",
+    "@tome/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tome/ts-config": "workspace:*",
+    "hono": "catalog:",
+    "typescript": "catalog:"
+  }
+}

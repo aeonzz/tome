@@ -1,0 +1,24 @@
+{
+  "name": "@tome/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@tome/db": "workspace:*",
+    "@tome/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tome/ts-config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

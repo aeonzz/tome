@@ -1,0 +1,38 @@
+{
+  "name": "tome",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "check-types": "turbo check-types",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @tome/db db:push",
+    "db:studio": "turbo -F @tome/db db:studio",
+    "db:generate": "turbo -F @tome/db db:generate",
+    "db:migrate": "turbo -F @tome/db db:migrate"
+  },
+  "dependencies": {
+    "@tome/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
+    "@tome/ts-config": "workspace:*",
+    "@types/node": "catalog:",
+    "turbo": "^2.8.12",
+    "typescript": "catalog:",
+    "prettier": "^3.8.1",
+    "eslint": "catalog:",
+    "prettier-plugin-tailwindcss": "^0.7.2"
+  },
+  "packageManager": "pnpm@10.17.1"
+}
