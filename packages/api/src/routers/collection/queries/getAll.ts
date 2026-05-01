@@ -1,0 +1,10 @@
+import prisma from "@tome/db"
+
+import { protectedProcedure } from "../../.."
+
+export const getAll = protectedProcedure.query(async ({ ctx }) => {
+  return await prisma.collection.findMany({
+    where: { userId: ctx.session.user.id },
+    orderBy: { name: "asc" },
+  })
+})
