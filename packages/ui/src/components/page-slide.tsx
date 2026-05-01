@@ -1,79 +1,91 @@
 import * as React from "react"
+import { cn } from "@tome/ui/lib/utils"
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-export interface PageSlideProps extends React.ComponentProps<"div"> {
-  /** Which page is currently active (1-indexed) */
-  page: number
-  /** Override CSS custom properties for this instance */
-  vars?: {
-    slideDur?: string
-    fadeDur?: string
-    slideDistance?: string
-    blur?: string
-    stagger?: string
-    exitEnabled?: 0 | 1
-  }
+const __TRANSITION_STYLES = `
+:root {
+  --page-slide-dur: 300ms;
+  --page-fade-dur: 300ms;
+  --page-slide-distance: 12px;
+  --page-blur: 4px;
+  --page-stagger: 0ms;
+  --page-exit-enabled: 1;
+  --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-export interface PageSlidePageProps extends Omit<React.ComponentProps<"section">, "id"> {
-  /** Must match the index used in PageSlide's `page` prop (1-indexed) */
-  id: number
+.t-page-slide {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.t-page-slide .t-page[data-page-id="root"] {
+  --t-page-from-x: calc(var(--page-slide-distance) * -1);
+}
+.t-page-slide .t-page[data-page-id="compose"] {
+  --t-page-from-x: var(--page-slide-distance);
+}
+.t-page-slide .t-page {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(calc(var(--t-page-from-x, 0px) * var(--page-exit-enabled)));
+  filter: blur(calc(var(--page-blur) * var(--page-exit-enabled)));
+  transition:
+    opacity   var(--page-fade-dur)  var(--page-fade-ease),
+    transform var(--page-slide-dur) var(--page-slide-ease),
+    filter    var(--page-slide-dur) var(--page-slide-ease);
+  will-change: opacity, transform, filter;
+}
+.t-page-slide[data-page="root"] .t-page[data-page-id="root"],
+.t-page-slide[data-page="compose"] .t-page[data-page-id="compose"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  filter: blur(0);
+  transition-delay: var(--page-stagger);
 }
 
-// ─── Sub-component: Page ─────────────────────────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .t-page-slide .t-page { transition: none !important; }
+}
+`
 
-function Page({ id, className, style, children, ...props }: PageSlidePageProps) {
+if (typeof document !== "undefined" && !document.getElementById("transitions-p8")) {
+  const __style = document.createElement("style")
+  __style.id = "transitions-p8"
+  __style.textContent = __TRANSITION_STYLES
+  document.head.appendChild(__style)
+}
+
+interface PageSlideProps {
+  activePage: "root" | "compose"
+  children: React.ReactNode
+  className?: string
+}
+
+export function PageSlide({ activePage, children, className }: PageSlideProps) {
   return (
-    <section
-      className={["t-page", className].filter(Boolean).join(" ")}
-      data-page-id={id}
-      style={style}
-      {...props}
-    >
-      {children}
-    </section>
-  )
-}
-
-Page.displayName = "PageSlide.Page"
-
-// ─── Root component ───────────────────────────────────────────────────────────
-
-function PageSlide({
-  page,
-  vars,
-  className,
-  style,
-  children,
-  ...props
-}: PageSlideProps) {
-  const cssVars = vars
-    ? ({
-        "--page-slide-dur": vars.slideDur,
-        "--page-fade-dur": vars.fadeDur,
-        "--page-slide-distance": vars.slideDistance,
-        "--page-blur": vars.blur,
-        "--page-stagger": vars.stagger,
-        "--page-exit-enabled": vars.exitEnabled,
-      } as React.CSSProperties)
-    : undefined
-
-  return (
-    <div
-      className={["t-page-slide", className].filter(Boolean).join(" ")}
-      data-page={page}
-      style={{ ...cssVars, ...style }}
-      {...props}
-    >
+    <div className={cn("t-page-slide", className)} data-page={activePage}>
       {children}
     </div>
   )
 }
 
-PageSlide.displayName = "PageSlide"
-PageSlide.Page = Page
+interface PageProps {
+  id: "root" | "compose"
+  children: React.ReactNode
+  className?: string
+}
 
-// ─── Exports ──────────────────────────────────────────────────────────────────
-
-export { PageSlide }
+export function Page({ id, children, className }: PageProps) {
+  return (
+    <section className={cn("t-page", className)} data-page-id={id}>
+      {children}
+    </section>
+  )
+}

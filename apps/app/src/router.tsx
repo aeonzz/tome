@@ -1,5 +1,6 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { createIsomorphicFn } from "@tanstack/react-start";
 
 import "./index.css";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
@@ -27,10 +28,20 @@ export const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60 * 1000 } },
 });
 
+const getHeaders = createIsomorphicFn()
+  .client(() => ({}))
+  .server(async () => {
+    const { getRequestHeaders } = await import("@tanstack/react-start/server");
+    return getRequestHeaders() as Record<string, string>;
+  });
+
 const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${env.VITE_SERVER_URL}/trpc`,
+      headers: async () => {
+        return getHeaders();
+      },
       fetch(url, options) {
         return fetch(url, {
           ...options,

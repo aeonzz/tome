@@ -1,9 +1,9 @@
 import { useMemo } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "@tome/ui/lib/utils"
 import { Label } from "@tome/ui/components/label"
 import { Separator } from "@tome/ui/components/separator"
+import { cn } from "@tome/ui/lib/utils"
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -104,7 +104,7 @@ function FieldLabel({
     <Label
       data-slot="field-label"
       className={cn(
-        "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border *:data-[slot=field]:p-2 dark:has-data-checked:bg-primary/10",
+        "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-data-checked:bg-primary/5 has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border *:data-[slot=field]:p-2 dark:has-data-checked:bg-primary/10 text-xs text-muted-foreground",
         "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
         className
       )}
@@ -174,22 +174,28 @@ function FieldSeparator({
 function FieldError({
   className,
   children,
-  errors,
+  errors: _errors,
   ...props
 }: React.ComponentProps<"div"> & {
-  errors?: Array<{ message?: string } | undefined>
+  errors?: Array<any>
 }) {
   const content = useMemo(() => {
     if (children) {
       return children
     }
 
+    const errors = _errors?.map((error) =>
+      typeof error === "string" ? { message: error } : error
+    )
+
     if (!errors?.length) {
       return null
     }
 
     const uniqueErrors = [
-      ...new Map(errors.map((error) => [error?.message, error])).values(),
+      ...new Map(
+        errors.filter(Boolean).map((error) => [error?.message, error])
+      ).values(),
     ]
 
     if (uniqueErrors?.length == 1) {
@@ -204,7 +210,7 @@ function FieldError({
         )}
       </ul>
     )
-  }, [children, errors])
+  }, [children, _errors])
 
   if (!content) {
     return null
@@ -214,7 +220,7 @@ function FieldError({
     <div
       role="alert"
       data-slot="field-error"
-      className={cn("text-xs/relaxed font-normal text-destructive", className)}
+      className={cn("text-destructive text-xs font-normal", className)}
       {...props}
     >
       {content}

@@ -16,7 +16,6 @@ import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
-import { Route as AppWewRouteImport } from './routes/_app/wew'
 import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
 import { Route as AppStarIndexRouteImport } from './routes/_app/star/index'
 import { Route as AppRecentIndexRouteImport } from './routes/_app/recent/index'
@@ -57,11 +56,6 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AppWewRoute = AppWewRouteImport.update({
-  id: '/wew',
-  path: '/wew',
-  getParentRoute: () => AppRouteRoute,
-} as any)
 const AppTagsIndexRoute = AppTagsIndexRouteImport.update({
   id: '/tags/',
   path: '/tags/',
@@ -97,7 +91,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/dashboard': typeof DashboardRoute
   '/todos': typeof TodosRoute
-  '/wew': typeof AppWewRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/archive/': typeof AppArchiveIndexRoute
@@ -111,7 +104,6 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/dashboard': typeof DashboardRoute
   '/todos': typeof TodosRoute
-  '/wew': typeof AppWewRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/archive': typeof AppArchiveIndexRoute
@@ -127,7 +119,6 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/todos': typeof TodosRoute
-  '/_app/wew': typeof AppWewRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
@@ -144,7 +135,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/todos'
-    | '/wew'
     | '/sign-in'
     | '/sign-up'
     | '/archive/'
@@ -158,7 +148,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/todos'
-    | '/wew'
     | '/sign-in'
     | '/sign-up'
     | '/archive'
@@ -173,7 +162,6 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/dashboard'
     | '/todos'
-    | '/_app/wew'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_app/'
@@ -243,13 +231,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_app/wew': {
-      id: '/_app/wew'
-      path: '/wew'
-      fullPath: '/wew'
-      preLoaderRoute: typeof AppWewRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
     '/_app/tags/': {
       id: '/_app/tags/'
       path: '/tags'
@@ -296,7 +277,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteRouteChildren {
-  AppWewRoute: typeof AppWewRoute
   AppIndexRoute: typeof AppIndexRoute
   AppArchiveIndexRoute: typeof AppArchiveIndexRoute
   AppBookmarksIndexRoute: typeof AppBookmarksIndexRoute
@@ -307,7 +287,6 @@ interface AppRouteRouteChildren {
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
-  AppWewRoute: AppWewRoute,
   AppIndexRoute: AppIndexRoute,
   AppArchiveIndexRoute: AppArchiveIndexRoute,
   AppBookmarksIndexRoute: AppBookmarksIndexRoute,
