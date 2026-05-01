@@ -1,0 +1,159 @@
+model Bookmark {
+    id           String   @id @default(cuid())
+    url          String
+    title        String
+    description  String?
+    favicon      String?
+    previewImage String?
+    isFavorite   Boolean  @default(false)
+    isArchived   Boolean  @default(false)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    collectionId String?
+    collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+
+    tags   BookmarkTag[]
+    notes  Note[]
+    shares BookmarkShare[]
+
+    @@index([userId])
+    @@index([collectionId])
+    @@map("bookmarks")
+}
+
+// ─────────────────────────────────────────────
+// COLLECTIONS / FOLDERS
+// ─────────────────────────────────────────────
+
+model Collection {
+    id          String   @id @default(cuid())
+    name        String
+    description String?
+    color       String?
+    icon        String?
+    isPublic    Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    parentId String?
+    parent   Collection?  @relation("CollectionNesting", fields: [parentId], references: [id])
+    children Collection[] @relation("CollectionNesting")
+
+    bookmarks Bookmark[]
+    shares    CollectionShare[]
+
+    @@index([userId])
+    @@index([parentId])
+    @@map("collections")
+}
+
+// ─────────────────────────────────────────────
+// TAGS
+// ─────────────────────────────────────────────
+
+model Tag {
+    id        String   @id @default(cuid())
+    name      String
+    color     String? 
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    bookmarks BookmarkTag[]
+
+    @@unique([userId, name])
+    @@index([userId])
+    @@map("tags")
+}
+
+model BookmarkTag {
+    bookmarkId String
+    tagId      String
+    assignedAt DateTime @default(now())
+
+    bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+    tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+    @@id([bookmarkId, tagId])
+    @@map("bookmark_tags")
+}
+
+// ─────────────────────────────────────────────
+// NOTES / ANNOTATIONS
+// ─────────────────────────────────────────────
+
+model Note {
+    id        String   @id @default(cuid())
+    content   String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    bookmarkId String
+    bookmark   Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([bookmarkId])
+    @@index([userId])
+    @@map("notes")
+}
+
+// ─────────────────────────────────────────────
+// SHARING
+// ─────────────────────────────────────────────
+
+enum SharePermission {
+    VIEW
+    EDIT
+}
+
+model BookmarkShare {
+    id         String          @id @default(cuid())
+    permission SharePermission @default(VIEW)
+    createdAt  DateTime        @default(now())
+
+    bookmarkId String
+    bookmark   Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+
+    sharedById String
+    sharedBy   User   @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+
+    sharedWithId String
+    sharedWith   User   @relation("SharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+    @@unique([bookmarkId, sharedWithId])
+    @@index([bookmarkId])
+    @@index([sharedById])
+    @@index([sharedWithId])
+    @@map("bookmark_shares")
+}
+
+model CollectionShare {
+    id         String          @id @default(cuid())
+    permission SharePermission @default(VIEW)
+    createdAt  DateTime        @default(now())
+
+    collectionId String
+    collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+    sharedById String
+    sharedBy   User   @relation("SharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+
+    sharedWithId String
+    sharedWith   User   @relation("SharedWith", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+    @@unique([collectionId, sharedWithId])
+    @@index([collectionId])
+    @@index([sharedById])
+    @@index([sharedWithId])
+    @@map("collection_shares")
+}
