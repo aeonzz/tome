@@ -2,7 +2,6 @@ import * as React from "react"
 import type { DialogRootChangeEventDetails } from "@base-ui/react"
 import { useHotkey } from "@tanstack/react-hotkeys"
 import { useNavigate } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import {
   Command,
@@ -28,111 +27,194 @@ import {
   InputGroupInput,
 } from "@tome/ui/components/input-group"
 import { Kbd, KbdGroup } from "@tome/ui/components/kbd"
+import { Page, PageSlide } from "@tome/ui/components/page-slide"
 import { IconBookmarkPlus, IconSearch } from "@tome/ui/icons"
 
-import { getActionGroups } from "@/config/constants"
-import { Page, PageSlide } from "@tome/ui/components/page-slide"
-import { useActionMenuStore } from "@/hooks/use-action-menu"
+import { ACTION_DEFINITIONS, actionRegistry } from "@/lib/action-registry"
+import type { ActionDefinition, ActionGroup } from "@/lib/action-registry"
+import { useActionMenuStore, type MenuView } from "@/hooks/use-action-menu"
 
-import { CreateBookmarkView } from "./create-bookmark-view"
 import { HotkeyBadge } from "../hotkey-badge"
+import { CreateBookmarkView } from "./create-bookmark-view"
 
-interface CommandBarProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+export const NAV_ROUTES: Record<string, string> = {
+  "nav.collections": "/collections",
+  "nav.bookmarks": "/bookmarks",
+  "nav.recent": "/recent",
+  "nav.visited": "/recent",
+  "nav.broken": "/broken",
 }
 
-export function ActionMenu({ open, onOpenChange }: CommandBarProps) {
+const GROUP_ORDER: ActionGroup[] = [
+  "navigation",
+  "bookmark",
+  "collection",
+  "tag",
+  "general",
+]
+
+const GROUP_LABELS: Record<ActionGroup, string> = {
+  navigation: "Navigation",
+  bookmark: "Bookmark Actions",
+  collection: "Collections",
+  tag: "Tags",
+  general: "General",
+}
+
+const ACTION_GROUPS = buildActionGroups(ACTION_DEFINITIONS)
+
+function parseBookmarkUrl(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === "http:" || url.protocol === "https:"
+      ? url.toString()
+      : null
+  } catch {
+    return null
+  }
+}
+
+function buildActionGroups(defs: ActionDefinition[]) {
+  const byGroup = new Map<ActionGroup, ActionDefinition[]>()
+  for (const def of defs) {
+    if (!byGroup.has(def.group)) byGroup.set(def.group, [])
+    byGroup.get(def.group)!.push(def)
+  }
+  return GROUP_ORDER.filter((g) => byGroup.has(g)).map((g) => ({
+    heading: GROUP_LABELS[g],
+    items: byGroup.get(g)!,
+  }))
+}
+
+function parseMenuView(opensView: string): MenuView {
+  const [type, subView] = opensView.split(".")
+  if (type === "compose")
+    return { type: "compose", view: subView as "bookmark" | "collection" }
+  // if (type === "picker")
+  //   return { type: "picker", view: subView as "collection" }
+  return { type: "root" }
+}
+
+export function ActionMenu() {
   const navigate = useNavigate()
-  const [query, setQuery] = React.useState("")
-  const { view, composeView, setView } = useActionMenuStore()
+  const {
+    open,
+    query,
+    view,
+    selection,
+    openMenu,
+    closeMenu,
+    setQuery,
+    setView,
+    resetView,
+    openNested
+  } = useActionMenuStore()
+
+  const commandInputRef = React.useRef<HTMLInputElement>(null)
 
   useHotkey("Mod+K", (e) => {
     e.preventDefault()
-    onOpenChange(!open)
-  })
-
-  const bookmarkUrl = React.useMemo(() => {
-    const value = query.trim()
-
-    if (!value) {
-      return null
-    }
-
-    try {
-      const parsed = new URL(value)
-      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        return null
-      }
-      return parsed.toString()
-    } catch {
-      return null
-    }
-  }, [query])
-
-  function handleOpenChange(
-    nextOpen: boolean,
-    e?: DialogRootChangeEventDetails
-  ) {
-    const isEscape = e?.reason === "escape-key"
-
-    if (!nextOpen && view === "compose" && isEscape) {
-      if (typeof e?.event?.preventDefault === "function") {
-        e.event.preventDefault()
-      }
-      setView("root")
-
-      setTimeout(() => {
-        const input = document.querySelector(
-          '[data-slot="command-input"]'
-        ) as HTMLInputElement
-        input?.focus()
-        input?.select()
-      }, 10)
-      return
-    }
-
-    onOpenChange(nextOpen)
-  }
-
-  function runCommand(fn: () => void) {
-    onOpenChange(false)
-    setQuery("")
-    fn()
-  }
-
-  const actionGroups = getActionGroups({
-    runCommand,
-    navigate: (to) => navigate(to),
-    toast,
-    setView,
+    open ? closeMenu() : openMenu()
   })
 
   React.useEffect(() => {
     if (!open) return
 
-    setTimeout(() => {
-      if (view === "root") {
-        const input = document.querySelector(
-          '[data-slot="command-input"]'
-        ) as HTMLInputElement
-        input?.focus()
-        input?.select()
-      } else if (view === "compose") {
-        const input = document.querySelector(
-          '#create-bookmark-form input[name="url"]'
-        ) as HTMLInputElement
-        input?.focus()
-        input?.select()
+    if (view.type === "compose") return // autoFocus on the form input handles this
+
+    // view.type === "root" — wait for the slide-back animation to finish
+    const id = setTimeout(() => {
+      commandInputRef.current?.focus()
+      commandInputRef.current?.select()
+    }, 150)
+
+    return () => clearTimeout(id)
+  }, [open, view.type])
+
+  const bookmarkUrl = parseBookmarkUrl(query)
+
+  const visibleGroups = React.useMemo(() => {
+    const groups = ACTION_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((def) => {
+        if (def.requiresSelection) {
+          return selection?.type === def.requiresSelection
+        }
+        return true
+      }),
+    })).filter((group) => group.items.length > 0)
+
+    if (!selection) return groups
+
+    // Bubble the selected entity's group to the top
+    const priorityGroup = GROUP_LABELS[selection.type as ActionGroup]
+    return [
+      ...groups.filter((g) => g.heading === priorityGroup),
+      ...groups.filter((g) => g.heading !== priorityGroup),
+    ]
+  }, [selection])
+
+  function runCommand(fn: () => void) {
+    closeMenu()
+    setTimeout(fn, 50)
+  }
+
+  function handleSelect(def: ActionDefinition) {
+    // Has children — open nested view
+    if (def.children?.length) {
+      openNested(def.id, def.children, def.label)
+      setQuery("") 
+      return
+    }
+
+    if (def.opensView) {
+      setView(parseMenuView(def.opensView))
+      return
+    }
+
+    if (def.id.startsWith("nav.")) {
+      const route = NAV_ROUTES[def.id]
+      if (route) runCommand(() => navigate({ to: route }))
+      return
+    }
+
+    const handled = actionRegistry.execute(def.id)
+    if (handled) runCommand(() => {})
+  }
+
+  function handleOpenChange(
+    nextOpen: boolean,
+    e?: DialogRootChangeEventDetails
+  ) {
+    if (!nextOpen && e?.reason === "escape-key") {
+      e.event?.preventDefault()
+
+      if (view.type === "compose") {
+        resetView()
+        return
       }
-    }, 20)
-  }, [open, view])
+
+      if (query) {
+        setQuery("")
+        return
+      }
+
+      if (view.type === "nested") {
+        resetView()
+        return
+      }
+    }
+
+    nextOpen ? openMenu() : closeMenu()
+  }
 
   return (
-    <React.Fragment>
+    <>
       <InputGroup
         className="w-full max-w-sm cursor-pointer select-none"
-        onClick={() => onOpenChange(true)}
+        onClick={openMenu}
       >
         <InputGroupAddon>
           <IconSearch className="size-4 opacity-50" />
@@ -148,15 +230,17 @@ export function ActionMenu({ open, onOpenChange }: CommandBarProps) {
           </kbd>
         </InputGroupAddon>
       </InputGroup>
+
       <CommandDialog
         open={open}
         onOpenChange={handleOpenChange as any}
         className="top-1/7 sm:max-w-2xl"
       >
-        <PageSlide activePage={view}>
+        <PageSlide activePage={view.type === "nested" ? "root" : view.type}>
           <Page id="root">
             <Command>
               <CommandInput
+                ref={commandInputRef}
                 placeholder="Type a command or paste a URL..."
                 value={query}
                 onValueChange={setQuery}
@@ -175,35 +259,63 @@ export function ActionMenu({ open, onOpenChange }: CommandBarProps) {
                     </EmptyHeader>
                   </Empty>
                 </CommandEmpty>
-                {bookmarkUrl && (
-                  <CommandGroup heading="Bookmark Actions">
-                    <CommandItem
-                      value={`add-bookmark-${bookmarkUrl}`}
-                      onSelect={() => setView("compose", "bookmark")}
-                    >
-                      <IconBookmarkPlus />
-                      <span>Add new bookmark</span>
-                      <CommandShortcut>
-                        <HotkeyBadge shortcut={{ type: "chord", value: "C" }} />
-                      </CommandShortcut>
-                    </CommandItem>
-                  </CommandGroup>
-                )}
-                {actionGroups.map((group) => (
-                  <CommandGroup key={group.heading} heading={group.heading}>
-                    {group.items.map((item) => (
-                      <CommandItem key={item.label} onSelect={item.onSelect}>
-                        <item.icon />
-                        <span>{item.label}</span>
-                        {item.shortcut && (
+                {view.type === "nested" ? (
+                  <CommandGroup heading={view.heading}>
+                    {view.items.map((def) => (
+                      <CommandItem
+                        key={def.id}
+                        onSelect={() => handleSelect(def)}
+                      >
+                        <def.icon />
+                        <span>{def.label}</span>
+                        {def.shortcut && (
                           <CommandShortcut>
-                            <HotkeyBadge shortcut={item.shortcut} />
+                            <HotkeyBadge shortcut={def.shortcut} />
                           </CommandShortcut>
                         )}
                       </CommandItem>
                     ))}
                   </CommandGroup>
-                ))}
+                ) : (
+                  <React.Fragment>
+                    {bookmarkUrl && (
+                      <CommandGroup heading="Bookmark Actions">
+                        <CommandItem
+                          value={`add-bookmark-${bookmarkUrl}`}
+                          onSelect={() =>
+                            setView({ type: "compose", view: "bookmark" })
+                          }
+                        >
+                          <IconBookmarkPlus />
+                          <span>Add new bookmark</span>
+                          <CommandShortcut>
+                            <HotkeyBadge
+                              shortcut={{ type: "chord", value: "C" }}
+                            />
+                          </CommandShortcut>
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
+                    {visibleGroups.map((group) => (
+                      <CommandGroup key={group.heading} heading={group.heading}>
+                        {group.items.map((def) => (
+                          <CommandItem
+                            key={def.id}
+                            onSelect={() => handleSelect(def)}
+                          >
+                            <def.icon />
+                            <span>{def.label}</span>
+                            {def.shortcut && (
+                              <CommandShortcut>
+                                <HotkeyBadge shortcut={def.shortcut} />
+                              </CommandShortcut>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    ))}
+                  </React.Fragment>
+                )}
               </CommandList>
             </Command>
             <CommandDialogFooter>
@@ -225,18 +337,17 @@ export function ActionMenu({ open, onOpenChange }: CommandBarProps) {
             </CommandDialogFooter>
           </Page>
           <Page id="compose">
-            {composeView === "bookmark" && (
+            {view.type === "compose" && view.view === "bookmark" && (
               <CreateBookmarkView
                 defaultUrl={bookmarkUrl ?? ""}
                 onSuccess={() => {
-                  onOpenChange(false)
+                  closeMenu()
                   setQuery("")
-                  setView("root")
                 }}
-                onBack={() => setView("root")}
+                onBack={resetView}
               />
             )}
-            {composeView === "collection" && (
+            {view.type === "compose" && view.view === "collection" && (
               <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
                 <div className="flex flex-col items-center gap-2">
                   <div className="text-sm font-medium text-foreground">
@@ -246,7 +357,7 @@ export function ActionMenu({ open, onOpenChange }: CommandBarProps) {
                     The collection creation form is under construction.
                   </div>
                   <button
-                    onClick={() => setView("root")}
+                    onClick={resetView}
                     className="mt-4 text-xs font-semibold text-primary hover:underline"
                   >
                     Go back
@@ -255,9 +366,8 @@ export function ActionMenu({ open, onOpenChange }: CommandBarProps) {
               </div>
             )}
           </Page>
-
         </PageSlide>
       </CommandDialog>
-    </React.Fragment>
+    </>
   )
 }

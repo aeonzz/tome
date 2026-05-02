@@ -2,7 +2,6 @@ import * as React from "react"
 import { getUser } from "@/functions/get-user"
 import {
   useHotkey,
-  useHotkeySequence,
   useHotkeySequences,
   type Hotkey,
 } from "@tanstack/react-hotkeys"
@@ -12,7 +11,6 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import {
   SidebarInset,
@@ -20,9 +18,13 @@ import {
   SidebarTrigger,
 } from "@tome/ui/components/sidebar"
 
-import { getActionGroups } from "@/config/constants"
-import { useActionMenuStore } from "@/hooks/use-action-menu"
-import { ActionMenu } from "@/components/action-menu"
+import {
+  ACTION_DEFINITIONS,
+  actionRegistry,
+  type ActionDefinition,
+} from "@/lib/action-registry"
+import { useActionMenuStore, type ComposeView } from "@/hooks/use-action-menu"
+import { ActionMenu, NAV_ROUTES } from "@/components/action-menu"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Error } from "@/components/error"
 import { NotFound } from "@/components/not-found"
@@ -54,71 +56,84 @@ export const Route = createFileRoute("/_app")({
   component: RouteComponent,
 })
 
-function GlobalHotkeys({ setOpen }: { setOpen: (open: boolean) => void }) {
+function GlobalHotkeys() {
   const navigate = useNavigate()
-  const setView = useActionMenuStore((state) => state.setView)
+  const { open, openTo } = useActionMenuStore()
 
-  const actionGroups = getActionGroups({
-    runCommand: (fn) => {
-      setOpen(false)
-      fn()
-    },
-    navigate: (to) => navigate(to),
-    toast,
-    setView: (view, composeView) => {
-      setView(view, composeView)
-      if (view === "compose") {
-        setOpen(true)
-      }
-    },
-  })
-
-  const actions = actionGroups.flatMap((g) => g.items)
+  // Don't fire shortcuts when the menu is open — user is typing
+  const enabled = !open
 
   const sequences = React.useMemo(
     () =>
-      actions
-        .filter((a) => a.shortcut?.type === "sequence")
-        .map((a) => ({
-          sequence: a.shortcut!.value as Hotkey[],
-          callback: () => a.onSelect(),
-        })),
-    [actions]
+      ACTION_DEFINITIONS.filter((def) => def.shortcut?.type === "sequence").map(
+        (def) => ({
+          sequence: def.shortcut!.value as Hotkey[],
+          callback: () => {
+            if (!enabled) return
+            handleShortcut(def)
+          },
+        })
+      ),
+    [enabled]
   )
 
   useHotkeySequences(sequences)
 
+  function handleShortcut(def: ActionDefinition) {
+    if (def.opensView) {
+      const [type, subView] = def.opensView.split(".")
+      openTo({ type: "compose", view: subView as ComposeView })
+      return
+    }
+    if (def.id.startsWith("nav.")) {
+      navigate({ to: NAV_ROUTES[def.id] })
+      return
+    }
+    actionRegistry.execute(def.id)
+  }
+
   return (
-    <React.Fragment>
-      {actions
-        .filter((a) => a.shortcut?.type === "chord")
-        .map((action) => (
-          <HotkeyHandler key={action.label} action={action} />
-        ))}
-    </React.Fragment>
+    <>
+      {ACTION_DEFINITIONS.filter((def) => def.shortcut?.type === "chord").map(
+        (def) => (
+          <HotkeyHandler
+            key={def.id}
+            hotkey={def.shortcut!.value as Hotkey}
+            enabled={enabled}
+            onTrigger={() => handleShortcut(def)}
+          />
+        )
+      )}
+    </>
   )
 }
 
-function HotkeyHandler({ action }: { action: any }) {
-  useHotkey(action.shortcut.value as Hotkey, (e) => {
+function HotkeyHandler({
+  hotkey,
+  enabled,
+  onTrigger,
+}: {
+  hotkey: Hotkey
+  enabled: boolean
+  onTrigger: () => void
+}) {
+  useHotkey(hotkey, (e) => {
+    if (!enabled) return
     e.preventDefault()
-    action.onSelect()
+    onTrigger()
   })
   return null
 }
 
 function RouteComponent() {
-  const [open, setOpen] = React.useState(false)
-
   return (
     <SidebarProvider>
-      <GlobalHotkeys setOpen={setOpen} />
+      <GlobalHotkeys />
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-4 px-4 justify-between">
           <SidebarTrigger />
-          <ActionMenu open={open} onOpenChange={setOpen} />
-          {/* <ThemeToggle /> */}
+          <ActionMenu />
         </header>
         <Outlet />
       </SidebarInset>

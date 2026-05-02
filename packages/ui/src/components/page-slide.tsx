@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { cn } from "@tome/ui/lib/utils"
 
 const __TRANSITION_STYLES = `
@@ -55,15 +56,20 @@ const __TRANSITION_STYLES = `
 }
 `
 
-if (typeof document !== "undefined" && !document.getElementById("transitions-p8")) {
+if (
+  typeof document !== "undefined" &&
+  !document.getElementById("transitions-p8")
+) {
   const __style = document.createElement("style")
   __style.id = "transitions-p8"
   __style.textContent = __TRANSITION_STYLES
   document.head.appendChild(__style)
 }
 
+export type PageId = "root" | "compose"
+
 interface PageSlideProps {
-  activePage: "root" | "compose"
+  activePage: PageId
   children: React.ReactNode
   className?: string
 }
@@ -77,7 +83,7 @@ export function PageSlide({ activePage, children, className }: PageSlideProps) {
 }
 
 interface PageProps {
-  id: "root" | "compose"
+  id: PageId
   children: React.ReactNode
   className?: string
 }
