@@ -55,6 +55,7 @@ function CommandDialog({
           className
         )}
         showCloseButton={showCloseButton}
+        finalFocus={false}
       >
         {children}
       </DialogContent>
@@ -206,10 +207,7 @@ function CommandView({
   return (
     <div
       data-slot="command-view"
-      className={cn(
-        "flex flex-col relative h-full",
-        className
-      )}
+      className={cn("flex flex-col relative h-full", className)}
       {...props}
     >
       <div className="w-full p-2">

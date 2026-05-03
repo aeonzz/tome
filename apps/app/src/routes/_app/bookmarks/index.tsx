@@ -1,9 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/_app/bookmarks/')({
+import { usePageContext } from "@/hooks/use-page-context"
+
+export const Route = createFileRoute("/_app/bookmarks/")({
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  usePageContext("bookmarks")
   return <div>Hello "/_app/bookmarks/"!</div>
 }

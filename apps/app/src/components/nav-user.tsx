@@ -35,15 +35,17 @@ export function NavUser({ user }: { user: Session["user"] }) {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
+              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted text-sidebar-foreground" />
             }
           >
-            <Avatar>
+            <Avatar className="size-5.5 transition-[width,height] ease-out-expo duration-400 group-data-[collapsible=icon]:size-8!">
               <AvatarImage
                 src={user.image ?? "/avatars/shadcn.jpg"}
                 alt={user.name}
               />
-              <AvatarFallback>CN</AvatarFallback>
+              <AvatarFallback>
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
@@ -64,7 +66,9 @@ export function NavUser({ user }: { user: Session["user"] }) {
                       src={user.image ?? "/avatars/shadcn.jpg"}
                       alt={user.name}
                     />
-                    <AvatarFallback>CN</AvatarFallback>
+                    <AvatarFallback>
+                      {user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>

@@ -10,56 +10,53 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@tome/ui/components/sidebar"
 import { IconChevronRight } from "@tome/ui/icons"
 
 import { SIDEBAR_ITEMS } from "@/config/constants"
+import { actionRegistry } from "@/lib/action-registry"
+import { useActionMenuStore } from "@/hooks/use-action-menu"
+import { HotkeyBadge } from "@/components/hotkey-badge"
 import { NavUser } from "@/components/nav-user"
 import { useTheme } from "@/components/theme-provider"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { toggleSidebar } = useSidebar()
+  const { setTheme } = useTheme()
   const location = useLocation()
   const { session } = Route.useRouteContext()
-  const { theme } = useTheme()
+  const closeMenu = useActionMenuStore((state) => state.closeMenu)
+
+  React.useMemo(() => {
+    actionRegistry.register("nav.sidebar", toggleSidebar)
+    actionRegistry.register("theme.light", () => {
+      closeMenu()
+      setTimeout(() => setTheme("light"), 450)
+    })
+    actionRegistry.register("theme.dark", () => {
+      closeMenu()
+      setTimeout(() => setTheme("dark"), 450)
+    })
+    actionRegistry.register("theme.system", () => {
+      closeMenu()
+      setTimeout(() => setTheme("system"), 450)
+    })
+  }, [toggleSidebar, setTheme, closeMenu])
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              className="hover:bg-transparent active:bg-transparent px-0"
-            >
-              <div className="flex aspect-square size-8 items-center justify-center">
-                <img
-                  src={
-                    theme === "light"
-                      ? "/icons/logo-ic-black.svg"
-                      : "/icons/logo-ic-white.svg"
-                  }
-                  alt="Tome Logo"
-                  width={20}
-                  height={20}
-                />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold -ml-1.5">Tome</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavUser user={session.user} />
       </SidebarHeader>
       <SidebarContent>
         {Object.entries(SIDEBAR_ITEMS).map(([sectionName, items]) => (
@@ -70,38 +67,49 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenu>
               {items.map((item) => (
                 <Collapsible key={item.title} render={<SidebarMenuItem />}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    isActive={item.url === location.pathname}
-                    render={<Link to={item.url} />}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
                   {item.items?.length ? (
-                    <>
-                      <CollapsibleTrigger
-                        render={
-                          <SidebarMenuAction className="aria-expanded:rotate-90" />
-                        }
-                      >
-                        <IconChevronRight />
-                        <span className="sr-only">Toggle</span>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
-                                render={<a href={subItem.url} />}
-                              >
-                                <span>{subItem.title}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton
+                          isActive={!!item.url && item.url === location.pathname}
+                          className="cursor-pointer data-panel-open:[&>svg:last-child]:rotate-90 active:bg-sidebar-accent/50"
+                        />
+                      }
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                      <IconChevronRight className=" transition-transform duration-300 ease-out-expo will-change-transform" />
+                    </CollapsibleTrigger>
+                  ) : (
+                    <SidebarMenuButton
+                      tooltip={{
+                        title: item.title,
+                        shortcut: item.shortcut ? (
+                          <HotkeyBadge shortcut={item.shortcut} />
+                        ) : undefined,
+                      }}
+                      isActive={item.url === location.pathname}
+                      render={<Link to={item.url!} />}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  )}
+                  {item.items?.length ? (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.items.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton
+                              render={<Link to={subItem.url} />}
+                            >
+                              <subItem.icon />
+                              <span>{subItem.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
                   ) : null}
                 </Collapsible>
               ))}
@@ -109,9 +117,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={session.user} />
-      </SidebarFooter>
     </Sidebar>
   )
 }

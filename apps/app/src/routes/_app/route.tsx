@@ -13,21 +13,30 @@ import {
 } from "@tanstack/react-router"
 
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@tome/ui/components/input-group"
+import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@tome/ui/components/sidebar"
+import { IconSearch } from "@tome/ui/icons"
 
+import { NAV_ROUTES } from "@/config/constants"
 import {
   ACTION_DEFINITIONS,
   actionRegistry,
-  type ActionDefinition,
 } from "@/lib/action-registry"
 import { useActionMenuStore, type ComposeView } from "@/hooks/use-action-menu"
-import { ActionMenu, NAV_ROUTES } from "@/components/action-menu"
+import { ActionMenu } from "@/components/action-menu"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Error } from "@/components/error"
+import { HotkeyBadge } from "@/components/hotkey-badge"
 import { NotFound } from "@/components/not-found"
+import type { ActionDefinition } from "@/types/action-types"
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
@@ -58,10 +67,13 @@ export const Route = createFileRoute("/_app")({
 
 function GlobalHotkeys() {
   const navigate = useNavigate()
-  const { open, openTo } = useActionMenuStore()
-
-  // Don't fire shortcuts when the menu is open — user is typing
+  const { open, openTo, openMenu, closeMenu } = useActionMenuStore()
+  const { toggleSidebar } = useSidebar()
   const enabled = !open
+
+  React.useMemo(() => {
+    actionRegistry.register("nav.sidebar", toggleSidebar)
+  }, [toggleSidebar])
 
   const sequences = React.useMemo(
     () =>
@@ -79,6 +91,11 @@ function GlobalHotkeys() {
 
   useHotkeySequences(sequences)
 
+  useHotkey("Mod+K", (e) => {
+    e.preventDefault()
+    open ? closeMenu() : openMenu()
+  })
+
   function handleShortcut(def: ActionDefinition) {
     if (def.opensView) {
       const [type, subView] = def.opensView.split(".")
@@ -86,8 +103,11 @@ function GlobalHotkeys() {
       return
     }
     if (def.id.startsWith("nav.")) {
-      navigate({ to: NAV_ROUTES[def.id] })
-      return
+      const route = NAV_ROUTES[def.id]
+      if (route) {
+        navigate({ to: route })
+        return
+      }
     }
     actionRegistry.execute(def.id)
   }
@@ -126,17 +146,35 @@ function HotkeyHandler({
 }
 
 function RouteComponent() {
+  const openMenu = useActionMenuStore((state) => state.openMenu)
+
   return (
     <SidebarProvider>
       <GlobalHotkeys />
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-4 px-4 justify-between">
+        <header className="flex shrink-0 items-center gap-4 p-2 justify-between border-b">
           <SidebarTrigger />
-          <ActionMenu />
+          <InputGroup
+            className="w-full max-w-xs cursor-pointer select-none"
+            onClick={openMenu}
+          >
+            <InputGroupAddon>
+              <IconSearch className="size-4 opacity-50" />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search or run a command..."
+              readOnly
+              className="cursor-pointer"
+            />
+            <InputGroupAddon align="inline-end">
+              <HotkeyBadge shortcut={{ type: "chord", value: "Mod+K" }} />
+            </InputGroupAddon>
+          </InputGroup>
         </header>
         <Outlet />
       </SidebarInset>
+      <ActionMenu />
     </SidebarProvider>
   )
 }

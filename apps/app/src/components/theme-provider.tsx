@@ -14,18 +14,36 @@ export function ThemeProvider({ children, theme: initialTheme }: Props) {
 
   // Sync with server-side theme if it changes externally
   useEffect(() => {
-    setOptimisticTheme(initialTheme)
-  }, [initialTheme])
+    if (optimisticTheme !== "system") return
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+
+    function handleChange(e: MediaQueryListEvent) {
+      const root = window.document.documentElement
+      root.classList.remove("light", "dark")
+      root.classList.add(e.matches ? "dark" : "light")
+    }
+
+    media.addEventListener("change", handleChange)
+    return () => media.removeEventListener("change", handleChange)
+  }, [optimisticTheme])
 
   function setTheme(val: Theme) {
     setOptimisticTheme(val)
 
     const root = window.document.documentElement
     root.classList.remove("light", "dark")
-    root.classList.add(val)
+
+    if (val === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      root.classList.add(systemTheme)
+    } else {
+      root.classList.add(val)
+    }
 
     setThemeServerFn({ data: val }).then(() => {
-      // Invalidate to ensure all components see the fresh state from the loader
       router.invalidate()
     })
   }

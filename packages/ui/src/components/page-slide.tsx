@@ -10,8 +10,8 @@ const __TRANSITION_STYLES = `
   --page-blur: 4px;
   --page-stagger: 0ms;
   --page-exit-enabled: 1;
-  --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --page-slide-ease: cubic-bezier(0.19, 1, 0.22, 1);
+  --page-fade-ease: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .t-page-slide {
@@ -95,3 +95,4 @@ export function Page({ id, children, className }: PageProps) {
     </section>
   )
 }
+

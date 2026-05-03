@@ -1,4 +1,7 @@
-import type { Hotkey } from "@tanstack/react-hotkeys"
+import { NAV_ACTION_DEFINITIONS } from "@/config/constants"
+import type {
+  ActionDefinition,
+} from "@/types/action-types"
 
 import {
   IconAlertTriangle,
@@ -7,7 +10,6 @@ import {
   IconBrandPocket,
   IconBrowser,
   IconClipboard,
-  IconClock,
   IconCloud,
   IconCopy,
   IconDeviceDesktop,
@@ -17,11 +19,11 @@ import {
   IconFileExport,
   IconFileImport,
   IconFileText,
-  IconFolder,
   IconFolderPlus,
   IconFolderSymlink,
   IconGitMerge,
   IconKeyboard,
+  IconLayoutSidebar,
   IconLogout,
   IconMessageCircle,
   IconMoon,
@@ -32,51 +34,7 @@ import {
   IconSun,
   IconTrash,
   IconUser,
-  type IconProps,
 } from "@tome/ui/icons"
-
-export type IconComponent = React.ForwardRefExoticComponent<
-  IconProps & React.RefAttributes<SVGSVGElement>
->
-
-export type Shortcut =
-  | { type: "chord"; value: Hotkey }
-  | { type: "sequence"; value: [Hotkey, Hotkey] }
-
-export type SelectionContext = "bookmark" | "collection" | "tag"
-
-export type ActionGroup =
-  | "navigation"
-  | "bookmark"
-  | "collection"
-  | "tag"
-  | "general"
-
-/**
- * An ActionDefinition is pure, static data.
- * It describes an action but knows nothing about how to execute it.
- * Handlers are registered separately via ActionRegistry.
- */
-export type ActionDefinition = {
-  /** Stable unique identifier — used to register handlers */
-  id: string
-  label: string
-  icon: IconComponent
-  group: ActionGroup
-  shortcut?: Shortcut
-  /**
-   * If set, this action is hidden from the command menu unless
-   * the specified entity is currently selected.
-   */
-  requiresSelection?: SelectionContext
-  /**
-   * If set, this action opens a sub-view inside the command menu
-   * instead of running a handler.
-   */
-  opensView?: string
-  /** If set, selecting this item opens a nested list instead of executing */
-  children?: ActionDefinition[]
-}
 
 // --------------- Definitions ---------------
 // This array is the single source of truth for what actions exist.
@@ -84,28 +42,9 @@ export type ActionDefinition = {
 // the rest of the app. Perfectly tree-shakeable and testable.
 
 export const ACTION_DEFINITIONS: ActionDefinition[] = [
-  // — Navigation —
-  {
-    id: "nav.collections",
-    label: "Go to Collections",
-    icon: IconFolder,
-    group: "navigation",
-    shortcut: { type: "sequence", value: ["G", "G"] },
-  },
-  {
-    id: "nav.bookmarks",
-    label: "View all bookmarks",
-    icon: IconBookmarkPlus,
-    group: "navigation",
-    shortcut: { type: "sequence", value: ["G", "B"] },
-  },
-  {
-    id: "nav.recent",
-    label: "View recently added",
-    icon: IconClock,
-    group: "navigation",
-    shortcut: { type: "sequence", value: ["G", "R"] },
-  },
+  // — Navigation (derived from SIDEBAR_ITEMS in constants.ts) —
+  ...NAV_ACTION_DEFINITIONS,
+  // Non-sidebar nav actions
   {
     id: "nav.visited",
     label: "View recently visited",
@@ -119,6 +58,13 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     icon: IconAlertTriangle,
     group: "navigation",
     shortcut: { type: "sequence", value: ["G", "L"] },
+  },
+  {
+    id: "nav.sidebar",
+    label: "Toggle sidebar",
+    icon: IconLayoutSidebar,
+    group: "navigation",
+    shortcut: { type: "chord", value: "Mod+B" },
   },
 
   // — Bookmark Actions —
@@ -135,6 +81,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Edit bookmark",
     icon: IconPencil,
     group: "bookmark",
+    context: "bookmarks",
     requiresSelection: "bookmark",
   },
   {
@@ -142,6 +89,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Delete bookmark",
     icon: IconTrash,
     group: "bookmark",
+    context: "bookmarks",
     requiresSelection: "bookmark",
   },
   {
@@ -149,6 +97,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Duplicate bookmark",
     icon: IconCopy,
     group: "bookmark",
+    context: "bookmarks",
     requiresSelection: "bookmark",
   },
   {
@@ -156,6 +105,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Move to collection",
     icon: IconFolderSymlink,
     group: "bookmark",
+    context: "bookmarks",
     requiresSelection: "bookmark",
     opensView: "picker.collection",
   },
@@ -164,6 +114,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Copy URL to clipboard",
     icon: IconClipboard,
     group: "bookmark",
+    context: "bookmarks",
     shortcut: { type: "chord", value: "Mod+C" },
     requiresSelection: "bookmark",
   },
@@ -172,6 +123,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Open in new tab",
     icon: IconExternalLink,
     group: "bookmark",
+    context: "bookmarks",
     requiresSelection: "bookmark",
   },
   {
@@ -179,6 +131,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Import bookmarks",
     icon: IconFileImport,
     group: "general",
+    context: "bookmarks",
     children: [
       { id: "import.browser", label: "From browser", icon: IconBrowser, group: "general" },
       { id: "import.raindrop", label: "From Raindrop", icon: IconCloud, group: "general" },
@@ -191,6 +144,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Export bookmarks",
     icon: IconFileExport,
     group: "general",
+    context: "bookmarks",
     children: [
       { id: "export.html", label: "As HTML", icon: IconFileCode, group: "general" },
       { id: "export.csv", label: "As CSV", icon: IconFileText, group: "general" },
@@ -204,6 +158,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "New collection",
     icon: IconFolderPlus,
     group: "collection",
+    context: "collections",
     opensView: "compose.collection",
   },
   {
@@ -211,6 +166,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Rename collection",
     icon: IconPencil,
     group: "collection",
+    context: "collections",
     requiresSelection: "collection",
   },
   {
@@ -218,6 +174,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Delete collection",
     icon: IconTrash,
     group: "collection",
+    context: "collections",
     requiresSelection: "collection",
   },
   {
@@ -225,6 +182,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Merge two collections",
     icon: IconGitMerge,
     group: "collection",
+    context: "collections",
     requiresSelection: "collection",
   },
   {
@@ -232,8 +190,10 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     label: "Share collection",
     icon: IconShare,
     group: "collection",
+    context: "collections",
     requiresSelection: "collection",
   },
+
 
   // — General —
   {

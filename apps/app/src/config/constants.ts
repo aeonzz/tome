@@ -1,42 +1,36 @@
-import type { Hotkey } from "@tanstack/react-hotkeys"
-
 import {
-  IconAlertTriangle,
   IconArchive,
   IconBookmark,
-  IconBookmarkPlus,
   IconCategory,
-  IconClipboard,
   IconClock,
-  IconCopy,
-  IconExternalLink,
-  IconEye,
   IconFolder,
-  IconFolderPlus,
-  IconFolderSymlink,
-  IconGitMerge,
-  IconPencil,
-  IconShare,
   IconStar,
   IconTag,
-  IconTrash,
   type IconProps,
 } from "@tome/ui/icons"
 
+import type { ActionDefinition, Shortcut } from "@/types/action-types"
 import type { RoutePath } from "@/types/route-type"
-import type { ComposeView } from "@/hooks/use-action-menu"
 
 type SidebarSubItem = {
-  title: string
-  url: string
-}
-
-type SidebarNavItem = {
   title: string
   url: RoutePath
   icon: React.ForwardRefExoticComponent<
     IconProps & React.RefAttributes<SVGSVGElement>
   >
+}
+
+type SidebarNavItem = {
+  title: string
+  /** Label used in the action menu (falls back to title) */
+  actionLabel?: string
+  /** Items with sub-items act as expanders and don't need a URL */
+  url?: RoutePath
+  icon: React.ForwardRefExoticComponent<
+    IconProps & React.RefAttributes<SVGSVGElement>
+  >
+  /** Keyboard shortcut exposed in the action menu */
+  shortcut?: Shortcut
   items?: Array<SidebarSubItem>
 }
 
@@ -46,194 +40,99 @@ export const SIDEBAR_ITEMS: SidebarItems = {
   core: [
     {
       title: "Home",
+      actionLabel: "Go to Home",
       url: "/",
       icon: IconCategory,
+      shortcut: { type: "sequence", value: ["G", "H"] },
     },
     {
       title: "Bookmarks",
+      actionLabel: "View all bookmarks",
       url: "/bookmarks",
       icon: IconBookmark,
-    },
-    {
-      title: "Collections",
-      url: "/collections",
-      icon: IconFolder,
+      shortcut: { type: "sequence", value: ["G", "B"] },
     },
     {
       title: "Tags",
+      actionLabel: "Go to Tags",
       url: "/tags",
       icon: IconTag,
+      shortcut: { type: "sequence", value: ["G", "T"] },
+    },
+    {
+      title: "Collections",
+      actionLabel: "Go to Collections",
+      icon: IconFolder,
+      shortcut: { type: "sequence", value: ["G", "G"] },
+      items: [
+        {
+          title: "Design Inspiration",
+          url: "/bookmarks",
+          icon: IconFolder,
+        },
+        { title: "Dev Resources", url: "/bookmarks", icon: IconFolder },
+        { title: "Reading List", url: "/bookmarks", icon: IconFolder },
+        {
+          title: "Tools & Utilities",
+          url: "/bookmarks",
+          icon: IconFolder,
+        },
+        { title: "Research", url: "/bookmarks", icon: IconFolder },
+      ],
     },
   ],
   views: [
     {
       title: "Star",
+      actionLabel: "Go to Starred",
       url: "/star",
       icon: IconStar,
     },
     {
       title: "Recently added",
+      actionLabel: "View recently added",
       url: "/recent",
       icon: IconClock,
+      shortcut: { type: "sequence", value: ["G", "R"] },
     },
     {
       title: "Archive",
+      actionLabel: "Go to Archive",
       url: "/archive",
       icon: IconArchive,
     },
   ],
 }
 
-export type ActionGroup = {
-  heading: string
-  items: Array<ActionItem>
-}
+/** Flat list of all sidebar nav items (excluding sub-collection items) */
+const FLAT_SIDEBAR_ITEMS = Object.values(SIDEBAR_ITEMS).flat()
 
-export type Shortcut =
-  | { type: "chord"; value: Hotkey }
-  | { type: "sequence"; value: Hotkey[] }
+/** nav.<slug> → route path — derived from SIDEBAR_ITEMS */
+export const NAV_ROUTES: Record<string, string> = FLAT_SIDEBAR_ITEMS.flatMap(
+  (item) => [item, ...(item.items ?? [])]
+).reduce<Record<string, string>>((acc, item) => {
+  if (!item.url) return acc
+  const slug =
+    item.url === "/" ? "home" : item.url.replace(/^\//, "").replace(/\//g, ".")
+  acc[`nav.${slug}`] = item.url
+  return acc
+}, {})
 
-export type ActionItem = {
-  icon: React.ForwardRefExoticComponent<
-    IconProps & React.RefAttributes<SVGSVGElement>
-  >
-  label: string
-  onSelect: () => void
-  shortcut?: Shortcut
-}
-
-type ActionGroupArgs = {
-  runCommand: (command: () => void) => void
-  navigate: ({ to }: { to: RoutePath }) => void
-  toast: {
-    info: (message: string) => void
-    error: (message: string) => void
-  }
-  setView: (view: "root" | "compose", composeView?: ComposeView) => void
-}
-
-export const getActionGroups = ({
-  runCommand,
-  navigate,
-  toast,
-  setView,
-}: ActionGroupArgs): Array<ActionGroup> => [
-  {
-    heading: "Navigation",
-    items: [
-      {
-        icon: IconFolder,
-        label: "Go to Collections",
-        shortcut: { type: "sequence", value: ["G", "G"] },
-        onSelect: () => runCommand(() => navigate({ to: "/collections" })),
-      },
-      {
-        icon: IconBookmark,
-        label: "View all bookmarks",
-        shortcut: { type: "sequence", value: ["G", "B"] },
-        onSelect: () => runCommand(() => navigate({ to: "/bookmarks" })),
-      },
-      {
-        icon: IconClock,
-        label: "View recently added",
-        shortcut: { type: "sequence", value: ["G", "R"] },
-        onSelect: () => runCommand(() => navigate({ to: "/recent" })),
-      },
-      {
-        icon: IconEye,
-        label: "View recently visited",
-        shortcut: { type: "sequence", value: ["G", "V"] },
-        onSelect: () => runCommand(() => navigate({ to: "/recent" })),
-      },
-      {
-        icon: IconAlertTriangle,
-        label: "View broken links",
-        shortcut: { type: "sequence", value: ["G", "L"] },
-        onSelect: () =>
-          runCommand(() => toast.info("Broken links scanner coming soon")),
-      },
-    ],
-  },
-  {
-    heading: "Bookmark Actions",
-    items: [
-      {
-        icon: IconBookmarkPlus,
-        label: "Add new bookmark",
-        shortcut: { type: "chord", value: "C" },
-        onSelect: () => setView("compose", "bookmark"),
-      },
-      {
-        icon: IconPencil,
-        label: "Edit bookmark",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a bookmark to edit")),
-      },
-      {
-        icon: IconTrash,
-        label: "Delete bookmark",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a bookmark to delete")),
-      },
-      {
-        icon: IconCopy,
-        label: "Duplicate bookmark",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a bookmark to duplicate")),
-      },
-      {
-        icon: IconFolderSymlink,
-        label: "Move to collection",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a bookmark to move")),
-      },
-      {
-        icon: IconClipboard,
-        label: "Copy URL to clipboard",
-        shortcut: { type: "chord", value: "Mod+C" },
-        onSelect: () =>
-          runCommand(() => toast.info("Select a bookmark to copy its URL")),
-      },
-      {
-        icon: IconExternalLink,
-        label: "Open in new tab",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a bookmark to open")),
-      },
-    ],
-  },
-  {
-    heading: "Collections",
-    items: [
-      {
-        icon: IconFolderPlus,
-        label: "New collection",
-        onSelect: () => setView("compose", "collection"),
-      },
-      {
-        icon: IconPencil,
-        label: "Rename collection",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a collection to rename")),
-      },
-      {
-        icon: IconTrash,
-        label: "Delete collection",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a collection to delete")),
-      },
-      {
-        icon: IconGitMerge,
-        label: "Merge two collections",
-        onSelect: () =>
-          runCommand(() => toast.info("Select two collections to merge")),
-      },
-      {
-        icon: IconShare,
-        label: "Share collection",
-        onSelect: () =>
-          runCommand(() => toast.info("Select a collection to share")),
-      },
-    ],
-  },
-]
+/**
+ * ActionDefinitions for all sidebar-based navigation actions.
+ * Import this in action-registry.ts instead of hand-writing nav entries.
+ */
+export const NAV_ACTION_DEFINITIONS: ActionDefinition[] =
+  FLAT_SIDEBAR_ITEMS.filter((item) => !!item.url).map((item) => {
+    const slug =
+      item.url === "/"
+        ? "home"
+        : item.url!.replace(/^\//, "").replace(/\//g, ".")
+    return {
+      id: `nav.${slug}`,
+      label: item.actionLabel ?? item.title,
+      icon: item.icon,
+      group: "navigation" as const,
+      ...(item.shortcut ? { shortcut: item.shortcut } : {}),
+    }
+  })

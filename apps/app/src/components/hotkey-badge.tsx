@@ -2,7 +2,7 @@ import * as React from "react"
 import { formatForDisplay, parseHotkey, type Hotkey } from "@tanstack/react-hotkeys"
 
 import { Kbd } from "@tome/ui/components/kbd"
-import type { Shortcut } from "@/config/constants"
+import type { Shortcut } from "@/types/action-types"
 
 export function HotkeyBadge({ shortcut }: { shortcut: Shortcut }) {
   const hotkeys = shortcut.type === "sequence" ? shortcut.value : [shortcut.value]

@@ -58,7 +58,7 @@
   --accent: oklch(0.2529 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 7%);
   --input: oklch(0.2269 0 0);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.809 0.105 251.813);
@@ -70,7 +70,7 @@
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: oklch(0.2529 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
@@ -185,58 +185,6 @@
     }
   }
 
-  /* ── page-slide ─────────────────────────────────────────── */
-  .t-page-slide {
-    position: relative;
-    --page-slide-dur: 200ms;
-    --page-fade-dur: 200ms;
-    --page-slide-distance: 8px;
-    --page-blur: 3px;
-    --page-stagger: 0ms;
-    --page-exit-enabled: 1;
-    --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .t-page-slide .t-page[data-page-id="1"] {
-    --t-page-from-x: calc(var(--page-slide-distance) * -1);
-  }
-
-  .t-page-slide .t-page[data-page-id="2"] {
-    --t-page-from-x: var(--page-slide-distance);
-  }
-
-  .t-page-slide .t-page {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(
-      calc(var(--t-page-from-x, 0px) * var(--page-exit-enabled))
-    );
-    filter: blur(calc(var(--page-blur) * var(--page-exit-enabled)));
-    transition:
-      opacity var(--page-fade-dur) var(--page-fade-ease),
-      transform var(--page-slide-dur) var(--page-slide-ease),
-      filter var(--page-slide-dur) var(--page-slide-ease);
-    will-change: opacity, transform, filter;
-  }
-
-  .t-page-slide[data-page="1"] .t-page[data-page-id="1"],
-  .t-page-slide[data-page="2"] .t-page[data-page-id="2"] {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(0);
-    filter: blur(0);
-    transition-delay: var(--page-stagger);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .t-page-slide .t-page {
-      transition: none !important;
-    }
-  }
-
   .t-text-fade {
     mask-image: linear-gradient(
       to right,
@@ -284,4 +232,13 @@
   100% {
     transform: translateX(min(0px, calc(-100% + 100cqw)));
   }
+}
+
+@keyframes dialog-press {
+  0%   { transform: scale(0.99); filter: blur(4px); }
+  100% { transform: scale(1);    filter: blur(0); }
+}
+
+.animate-dialog-press {
+  animation: dialog-press 300ms var(--ease-out-expo);
 }

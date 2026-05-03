@@ -136,7 +136,7 @@ const MOCK_COLLECTIONS = [
 function RouteComponent() {
   return (
     <Shell>
-      <div className="flex flex-col gap-10 py-6">
+      <div className="flex flex-col gap-10 py-4">
         {/* Featured Section */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -197,7 +197,7 @@ function RouteComponent() {
               <div
                 key={col.id}
                 tabIndex={0}
-                className="group relative flex items-center gap-3 rounded-xl p-3 bg-secondary/30 ring-1 ring-border/50 hover:ring-primary/10 hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary outline-none transition-all cursor-pointer overflow-hidden"
+                className="group relative flex items-center gap-3 rounded-xl p-3 bg-secondary/30 ring-1 ring-border hover:ring-primary/10 hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary outline-none transition-all cursor-pointer overflow-hidden"
               >
                 <div
                   className={cn(

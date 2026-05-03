@@ -1,6 +1,5 @@
 import * as React from "react"
 import type { DialogRootChangeEventDetails } from "@base-ui/react"
-import { useHotkey } from "@tanstack/react-hotkeys"
 import { useNavigate } from "@tanstack/react-router"
 
 import {
@@ -21,29 +20,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@tome/ui/components/empty"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@tome/ui/components/input-group"
 import { Kbd, KbdGroup } from "@tome/ui/components/kbd"
 import { Page, PageSlide } from "@tome/ui/components/page-slide"
 import { IconBookmarkPlus, IconSearch } from "@tome/ui/icons"
 
+import type { ActionDefinition, ActionGroup } from "@/types/action-types"
+import { NAV_ROUTES } from "@/config/constants"
 import { ACTION_DEFINITIONS, actionRegistry } from "@/lib/action-registry"
-import type { ActionDefinition, ActionGroup } from "@/lib/action-registry"
 import { useActionMenuStore, type MenuView } from "@/hooks/use-action-menu"
 
 import { HotkeyBadge } from "../hotkey-badge"
 import { CreateBookmarkView } from "./create-bookmark-view"
-
-export const NAV_ROUTES: Record<string, string> = {
-  "nav.collections": "/collections",
-  "nav.bookmarks": "/bookmarks",
-  "nav.recent": "/recent",
-  "nav.visited": "/recent",
-  "nav.broken": "/broken",
-}
 
 const GROUP_ORDER: ActionGroup[] = [
   "navigation",
@@ -98,26 +85,24 @@ function parseMenuView(opensView: string): MenuView {
 }
 
 export function ActionMenu() {
+  const rootKeyRef = React.useRef(0)
+  const nestedKeyRef = React.useRef(0)
   const navigate = useNavigate()
   const {
     open,
     query,
     view,
     selection,
+    pageContext,
     openMenu,
     closeMenu,
     setQuery,
     setView,
     resetView,
-    openNested
+    openNested,
   } = useActionMenuStore()
 
   const commandInputRef = React.useRef<HTMLInputElement>(null)
-
-  useHotkey("Mod+K", (e) => {
-    e.preventDefault()
-    open ? closeMenu() : openMenu()
-  })
 
   React.useEffect(() => {
     if (!open) return
@@ -139,6 +124,7 @@ export function ActionMenu() {
     const groups = ACTION_GROUPS.map((group) => ({
       ...group,
       items: group.items.filter((def) => {
+        if (def.context && def.context !== pageContext) return false
         if (def.requiresSelection) {
           return selection?.type === def.requiresSelection
         }
@@ -148,13 +134,12 @@ export function ActionMenu() {
 
     if (!selection) return groups
 
-    // Bubble the selected entity's group to the top
     const priorityGroup = GROUP_LABELS[selection.type as ActionGroup]
     return [
       ...groups.filter((g) => g.heading === priorityGroup),
       ...groups.filter((g) => g.heading !== priorityGroup),
     ]
-  }, [selection])
+  }, [selection, pageContext])
 
   function runCommand(fn: () => void) {
     closeMenu()
@@ -164,8 +149,9 @@ export function ActionMenu() {
   function handleSelect(def: ActionDefinition) {
     // Has children — open nested view
     if (def.children?.length) {
+      nestedKeyRef.current += 1
       openNested(def.id, def.children, def.label)
-      setQuery("") 
+      setQuery("")
       return
     }
 
@@ -176,8 +162,10 @@ export function ActionMenu() {
 
     if (def.id.startsWith("nav.")) {
       const route = NAV_ROUTES[def.id]
-      if (route) runCommand(() => navigate({ to: route }))
-      return
+      if (route) {
+        runCommand(() => navigate({ to: route }))
+        return
+      }
     }
 
     const handled = actionRegistry.execute(def.id)
@@ -202,6 +190,7 @@ export function ActionMenu() {
       }
 
       if (view.type === "nested") {
+        rootKeyRef.current += 1
         resetView()
         return
       }
@@ -211,54 +200,42 @@ export function ActionMenu() {
   }
 
   return (
-    <>
-      <InputGroup
-        className="w-full max-w-sm cursor-pointer select-none"
-        onClick={openMenu}
-      >
-        <InputGroupAddon>
-          <IconSearch className="size-4 opacity-50" />
-        </InputGroupAddon>
-        <InputGroupInput
-          placeholder="Search..."
-          readOnly
-          className="cursor-pointer"
-        />
-        <InputGroupAddon align="inline-end">
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd>
-        </InputGroupAddon>
-      </InputGroup>
-
-      <CommandDialog
-        open={open}
-        onOpenChange={handleOpenChange as any}
-        className="top-1/7 sm:max-w-2xl"
-      >
-        <PageSlide activePage={view.type === "nested" ? "root" : view.type}>
-          <Page id="root">
-            <Command>
-              <CommandInput
-                ref={commandInputRef}
-                placeholder="Type a command or paste a URL..."
-                value={query}
-                onValueChange={setQuery}
-              />
-              <CommandList>
-                <CommandEmpty>
-                  <Empty className="border-none shadow-none py-24">
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <IconSearch />
-                      </EmptyMedia>
-                      <EmptyTitle>No results found</EmptyTitle>
-                      <EmptyDescription>
-                        We couldn&apos;t find anything matching your search.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-                </CommandEmpty>
+    <CommandDialog
+      open={open}
+      onOpenChange={handleOpenChange as any}
+      className="top-1/8 sm:max-w-2xl"
+    >
+      <PageSlide activePage={view.type === "nested" ? "root" : view.type}>
+        <Page id="root">
+          <Command>
+            <CommandInput
+              ref={commandInputRef}
+              placeholder="Type a command or paste a URL..."
+              value={query}
+              onValueChange={setQuery}
+            />
+            <CommandList>
+              <CommandEmpty>
+                <Empty className="border-none shadow-none py-24">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <IconSearch />
+                    </EmptyMedia>
+                    <EmptyTitle>No results found</EmptyTitle>
+                    <EmptyDescription>
+                      We couldn&apos;t find anything matching your search.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </CommandEmpty>
+              <div
+                key={
+                  view.type === "nested"
+                    ? `nested-${nestedKeyRef.current}`
+                    : `root-${rootKeyRef.current}`
+                }
+                className="animate-dialog-press"
+              >
                 {view.type === "nested" ? (
                   <CommandGroup heading={view.heading}>
                     {view.items.map((def) => (
@@ -316,58 +293,58 @@ export function ActionMenu() {
                     ))}
                   </React.Fragment>
                 )}
-              </CommandList>
-            </Command>
-            <CommandDialogFooter>
-              <div className="flex items-center gap-2">
-                <Kbd className="text-[10px] font-bold">↵</Kbd>
-                <span>to select</span>
               </div>
-              <div className="flex items-center gap-2">
-                <KbdGroup>
-                  <Kbd className="text-[10px] font-bold">↑</Kbd>
-                  <Kbd className="text-[10px] font-bold">↓</Kbd>
-                </KbdGroup>
-                <span>to navigate</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Kbd className="text-[10px] font-bold uppercase">esc</Kbd>
-                <span>to close</span>
-              </div>
-            </CommandDialogFooter>
-          </Page>
-          <Page id="compose">
-            {view.type === "compose" && view.view === "bookmark" && (
-              <CreateBookmarkView
-                defaultUrl={bookmarkUrl ?? ""}
-                onSuccess={() => {
-                  closeMenu()
-                  setQuery("")
-                }}
-                onBack={resetView}
-              />
-            )}
-            {view.type === "compose" && view.view === "collection" && (
-              <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="text-sm font-medium text-foreground">
-                    Create Collection
-                  </div>
-                  <div className="text-xs">
-                    The collection creation form is under construction.
-                  </div>
-                  <button
-                    onClick={resetView}
-                    className="mt-4 text-xs font-semibold text-primary hover:underline"
-                  >
-                    Go back
-                  </button>
+            </CommandList>
+          </Command>
+          <CommandDialogFooter>
+            <div className="flex items-center gap-2">
+              <Kbd className="text-[10px] font-bold">↵</Kbd>
+              <span>to select</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <KbdGroup>
+                <Kbd className="text-[10px] font-bold">↑</Kbd>
+                <Kbd className="text-[10px] font-bold">↓</Kbd>
+              </KbdGroup>
+              <span>to navigate</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Kbd className="text-[10px] font-bold uppercase">esc</Kbd>
+              <span>to close</span>
+            </div>
+          </CommandDialogFooter>
+        </Page>
+        <Page id="compose">
+          {view.type === "compose" && view.view === "bookmark" && (
+            <CreateBookmarkView
+              defaultUrl={bookmarkUrl ?? ""}
+              onSuccess={() => {
+                closeMenu()
+                setQuery("")
+              }}
+              onBack={resetView}
+            />
+          )}
+          {view.type === "compose" && view.view === "collection" && (
+            <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-sm font-medium text-foreground">
+                  Create Collection
                 </div>
+                <div className="text-xs">
+                  The collection creation form is under construction.
+                </div>
+                <button
+                  onClick={resetView}
+                  className="mt-4 text-xs font-semibold text-primary hover:underline"
+                >
+                  Go back
+                </button>
               </div>
-            )}
-          </Page>
-        </PageSlide>
-      </CommandDialog>
-    </>
+            </div>
+          )}
+        </Page>
+      </PageSlide>
+    </CommandDialog>
   )
 }
