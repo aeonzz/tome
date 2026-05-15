@@ -25,18 +25,15 @@ import {
 } from "@tome/ui/components/sidebar"
 import { IconSearch } from "@tome/ui/icons"
 
+import type { ActionDefinition } from "@/types/action-types"
 import { NAV_ROUTES } from "@/config/constants"
-import {
-  ACTION_DEFINITIONS,
-  actionRegistry,
-} from "@/lib/action-registry"
+import { ACTION_DEFINITIONS, actionRegistry } from "@/lib/action-registry"
 import { useActionMenuStore, type ComposeView } from "@/hooks/use-action-menu"
 import { ActionMenu } from "@/components/action-menu"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Error } from "@/components/error"
 import { HotkeyBadge } from "@/components/hotkey-badge"
 import { NotFound } from "@/components/not-found"
-import type { ActionDefinition } from "@/types/action-types"
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {

@@ -1,6 +1,7 @@
 import React from "react"
 import { useTRPC } from "@/utils/trpc"
-import { useForm } from "@tanstack/react-form"
+import { useActionMenuStore } from "@/hooks/use-action-menu"
+import { useForm, useStore } from "@tanstack/react-form"
 import { useHotkey } from "@tanstack/react-hotkeys"
 import {
   useMutation,
@@ -49,16 +50,19 @@ export function CreateBookmarkView({
   defaultUrl = "",
   onSuccess,
   onBack,
+  onLockChange,
 }: {
   defaultUrl?: string
   onSuccess: () => void
   onBack?: () => void
+  onLockChange?: (locked: boolean) => void
 }) {
   const queryClient = useQueryClient()
   const trpc = useTRPC()
   const anchor = useComboboxAnchor()
   const viewRef = React.useRef<HTMLDivElement>(null)
   const [query, setQuery] = React.useState("")
+  const isComposeLocked = useActionMenuStore((s) => s.isComposeLocked)
 
   const { data: tags } = useSuspenseQuery(
     trpc.tag.queries.getAll.queryOptions()
@@ -119,6 +123,12 @@ export function CreateBookmarkView({
     { target: viewRef }
   )
 
+  const isSubmitting = useStore(form.store, (s) => s.isSubmitting)
+
+  React.useEffect(() => {
+    onLockChange?.(isSubmitting)
+  }, [isSubmitting, onLockChange])
+
   return (
     <React.Fragment>
       <CommandView
@@ -126,6 +136,7 @@ export function CreateBookmarkView({
         tabIndex={-1}
         className="outline-none"
         onBack={() => onBack?.()}
+        backDisabled={isComposeLocked}
       >
         <form
           id="create-bookmark-form"

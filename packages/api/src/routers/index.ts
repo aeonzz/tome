@@ -1,4 +1,5 @@
 import { protectedProcedure, publicProcedure, router } from "../index"
+import { bookmarkRouter } from "./bookmark"
 import { collectionRouter } from "./collection"
 import { tagRouter } from "./tag"
 import { todoRouter } from "./todo"
@@ -16,5 +17,6 @@ export const appRouter = router({
   todo: todoRouter,
   tag: tagRouter,
   collection: collectionRouter,
+  bookmark: bookmarkRouter,
 })
 export type AppRouter = typeof appRouter

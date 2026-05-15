@@ -133,7 +133,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
     group: "general",
     context: "bookmarks",
     children: [
-      { id: "import.browser", label: "From browser", icon: IconBrowser, group: "general" },
+      { id: "import.browser", label: "From browser", icon: IconBrowser, group: "general", opensView: "compose.import-browser" },
       { id: "import.raindrop", label: "From Raindrop", icon: IconCloud, group: "general" },
       { id: "import.pocket", label: "From Pocket", icon: IconBrandPocket, group: "general" },
       { id: "import.csv", label: "From CSV", icon: IconFileText, group: "general" },

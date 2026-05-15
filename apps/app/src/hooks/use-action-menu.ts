@@ -2,7 +2,7 @@ import { create } from "zustand"
 
 import type { ActionDefinition, PageContext } from "@/types/action-types"
 
-export type ComposeView = "bookmark" | "collection"
+export type ComposeView = "bookmark" | "collection" | "import-browser"
 
 export type MenuView =
   | { type: "root" }
@@ -24,7 +24,9 @@ interface ActionMenuState {
   open: boolean
   query: string
   view: MenuView
+  viewStack: MenuView[]
   selection: SelectionState
+  isComposeLocked: boolean
 
   openMenu: () => void
   openTo: (view: MenuView) => void
@@ -32,7 +34,9 @@ interface ActionMenuState {
   setQuery: (query: string) => void
   setView: (view: MenuView) => void
   resetView: () => void
+  goBack: () => void
   setSelection: (selection: SelectionState) => void
+  setComposeLocked: (locked: boolean) => void
   openNested: (
     parentId: string,
     items: ActionDefinition[],
@@ -46,17 +50,30 @@ export const useActionMenuStore = create<ActionMenuState>((set) => ({
   open: false,
   query: "",
   view: { type: "root" },
+  viewStack: [],
   selection: null,
+  isComposeLocked: false,
 
-  openMenu: () => set({ open: true, view: { type: "root" }, query: "" }),
-  openTo: (view) => set({ open: true, query: "", view }),
-  closeMenu: () => set({ open: false, query: "" }),
+  openMenu: () => set({ open: true, view: { type: "root" }, viewStack: [], query: "", isComposeLocked: false }),
+  openTo: (view) => set({ open: true, query: "", view, viewStack: [], isComposeLocked: false }),
+  closeMenu: () => set({ open: false, query: "", isComposeLocked: false }),
   setQuery: (query) => set({ query }),
-  setView: (view) => set({ view }),
-  resetView: () => set({ view: { type: "root" } }),
+  setView: (view) => set((state) => ({ view, viewStack: [...state.viewStack, state.view] })),
+  resetView: () => set({ view: { type: "root" }, viewStack: [], isComposeLocked: false }),
+  goBack: () =>
+    set((state) => {
+      if (state.viewStack.length === 0) return { view: { type: "root" }, isComposeLocked: false }
+      const newStack = [...state.viewStack]
+      const prevView = newStack.pop()!
+      return { view: prevView, viewStack: newStack, isComposeLocked: false }
+    }),
   setSelection: (selection) => set({ selection }),
+  setComposeLocked: (locked) => set({ isComposeLocked: locked }),
   openNested: (parentId, items, heading) =>
-    set({ view: { type: "nested", parentId, items, heading } }),
+    set((state) => ({
+      view: { type: "nested", parentId, items, heading },
+      viewStack: [...state.viewStack, state.view],
+    })),
   pageContext: null,
   setPageContext: (pageContext) => set({ pageContext }),
 }))

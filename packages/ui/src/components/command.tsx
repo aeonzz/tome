@@ -200,9 +200,11 @@ function CommandView({
   children,
   className,
   onBack,
+  backDisabled,
   ...props
 }: React.ComponentProps<"div"> & {
   onBack?: () => void
+  backDisabled?: boolean
 }) {
   return (
     <div
@@ -212,7 +214,7 @@ function CommandView({
     >
       <div className="w-full p-2">
         {onBack && (
-          <Button variant="ghost" size="icon-xs" onClick={onBack}>
+          <Button variant="ghost" size="icon-xs" onClick={onBack} disabled={backDisabled}>
             <IconChevronLeft />
           </Button>
         )}

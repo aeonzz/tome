@@ -31,6 +31,7 @@ import { useActionMenuStore, type MenuView } from "@/hooks/use-action-menu"
 
 import { HotkeyBadge } from "../hotkey-badge"
 import { CreateBookmarkView } from "./create-bookmark-view"
+import { ImportBrowserView } from "./import-browser-view"
 
 const GROUP_ORDER: ActionGroup[] = [
   "navigation",
@@ -78,7 +79,10 @@ function buildActionGroups(defs: ActionDefinition[]) {
 function parseMenuView(opensView: string): MenuView {
   const [type, subView] = opensView.split(".")
   if (type === "compose")
-    return { type: "compose", view: subView as "bookmark" | "collection" }
+    return {
+      type: "compose",
+      view: subView as "bookmark" | "collection" | "import-browser",
+    }
   // if (type === "picker")
   //   return { type: "picker", view: subView as "collection" }
   return { type: "root" }
@@ -92,17 +96,29 @@ export function ActionMenu() {
     open,
     query,
     view,
+    viewStack,
     selection,
     pageContext,
+    isComposeLocked,
     openMenu,
     closeMenu,
     setQuery,
     setView,
     resetView,
+    goBack,
     openNested,
+    setComposeLocked,
   } = useActionMenuStore()
 
   const commandInputRef = React.useRef<HTMLInputElement>(null)
+
+  const rootLikeView = React.useMemo<MenuView>(() => {
+    if (view.type === "compose") {
+      const prev = viewStack[viewStack.length - 1]
+      return prev ?? { type: "root" }
+    }
+    return view
+  }, [view, viewStack])
 
   React.useEffect(() => {
     if (!open) return
@@ -180,7 +196,8 @@ export function ActionMenu() {
       e.event?.preventDefault()
 
       if (view.type === "compose") {
-        resetView()
+        if (isComposeLocked) return
+        goBack()
         return
       }
 
@@ -191,7 +208,7 @@ export function ActionMenu() {
 
       if (view.type === "nested") {
         rootKeyRef.current += 1
-        resetView()
+        goBack()
         return
       }
     }
@@ -204,6 +221,7 @@ export function ActionMenu() {
       open={open}
       onOpenChange={handleOpenChange as any}
       className="top-1/8 sm:max-w-2xl"
+      disablePointerDismissal={isComposeLocked}
     >
       <PageSlide activePage={view.type === "nested" ? "root" : view.type}>
         <Page id="root">
@@ -230,15 +248,15 @@ export function ActionMenu() {
               </CommandEmpty>
               <div
                 key={
-                  view.type === "nested"
+                  rootLikeView.type === "nested"
                     ? `nested-${nestedKeyRef.current}`
                     : `root-${rootKeyRef.current}`
                 }
                 className="animate-dialog-press"
               >
-                {view.type === "nested" ? (
-                  <CommandGroup heading={view.heading}>
-                    {view.items.map((def) => (
+                {rootLikeView.type === "nested" ? (
+                  <CommandGroup heading={rootLikeView.heading}>
+                    {rootLikeView.items.map((def) => (
                       <CommandItem
                         key={def.id}
                         onSelect={() => handleSelect(def)}
@@ -322,7 +340,8 @@ export function ActionMenu() {
                 closeMenu()
                 setQuery("")
               }}
-              onBack={resetView}
+              onBack={goBack}
+              onLockChange={setComposeLocked}
             />
           )}
           {view.type === "compose" && view.view === "collection" && (
@@ -335,13 +354,23 @@ export function ActionMenu() {
                   The collection creation form is under construction.
                 </div>
                 <button
-                  onClick={resetView}
+                  onClick={goBack}
                   className="mt-4 text-xs font-semibold text-primary hover:underline"
                 >
                   Go back
                 </button>
               </div>
             </div>
+          )}
+          {view.type === "compose" && view.view === "import-browser" && (
+            <ImportBrowserView
+              onSuccess={() => {
+                closeMenu()
+                setQuery("")
+              }}
+              onBack={goBack}
+              onLockChange={setComposeLocked}
+            />
           )}
         </Page>
       </PageSlide>

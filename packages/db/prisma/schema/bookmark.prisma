@@ -20,6 +20,7 @@ model Bookmark {
     notes  Note[]
     shares BookmarkShare[]
 
+    @@unique([userId, url])
     @@index([userId])
     @@index([collectionId])
     @@map("bookmarks")
@@ -49,6 +50,7 @@ model Collection {
     bookmarks Bookmark[]
     shares    CollectionShare[]
 
+    @@unique([userId, name, parentId])
     @@index([userId])
     @@index([parentId])
     @@map("collections")

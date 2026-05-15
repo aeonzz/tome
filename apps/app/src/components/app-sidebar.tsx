@@ -71,7 +71,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <CollapsibleTrigger
                       render={
                         <SidebarMenuButton
-                          isActive={!!item.url && item.url === location.pathname}
+                          isActive={
+                            !!item.url && item.url === location.pathname
+                          }
                           className="cursor-pointer data-panel-open:[&>svg:last-child]:rotate-90 active:bg-sidebar-accent/50"
                         />
                       }
