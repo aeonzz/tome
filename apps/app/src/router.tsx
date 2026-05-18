@@ -1,18 +1,21 @@
-import { QueryCache, QueryClient } from "@tanstack/react-query";
-import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-import { createIsomorphicFn } from "@tanstack/react-start";
+import { QueryCache, QueryClient } from "@tanstack/react-query"
+import { createRouter as createTanStackRouter } from "@tanstack/react-router"
+import { createIsomorphicFn } from "@tanstack/react-start"
 
-import "./index.css";
-import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
-import type { AppRouter } from "@tome/api/routers/index";
-import { env } from "@tome/env/web";
-import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
-import { toast } from "sonner";
+import "./index.css"
 
-import Loader from "./components/loader";
-import { routeTree } from "./routeTree.gen";
-import { TRPCProvider } from "./utils/trpc";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
+import { createTRPCClient, httpBatchLink } from "@trpc/client"
+import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query"
+import type { AppRouter } from "@tome/api/routers/index"
+
+import { env } from "@tome/env/web"
+
+import { toast } from "@tome/ui/sonner"
+
+import Loader from "./components/loader"
+import { routeTree } from "./routeTree.gen"
+import { TRPCProvider } from "./utils/trpc"
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -22,40 +25,40 @@ export const queryClient = new QueryClient({
           label: "retry",
           onClick: query.invalidate,
         },
-      });
+      })
     },
   }),
   defaultOptions: { queries: { staleTime: 60 * 1000 } },
-});
+})
 
 const getHeaders = createIsomorphicFn()
   .client(() => ({}))
   .server(async () => {
-    const { getRequestHeaders } = await import("@tanstack/react-start/server");
-    return getRequestHeaders() as Record<string, string>;
-  });
+    const { getRequestHeaders } = await import("@tanstack/react-start/server")
+    return getRequestHeaders() as Record<string, string>
+  })
 
 const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${env.VITE_SERVER_URL}/trpc`,
       headers: async () => {
-        return getHeaders();
+        return getHeaders()
       },
       fetch(url, options) {
         return fetch(url, {
           ...options,
           credentials: "include",
-        });
+        })
       },
     }),
   ],
-});
+})
 
 const trpc = createTRPCOptionsProxy({
   client: trpcClient,
   queryClient: queryClient,
-});
+})
 
 export const getRouter = () => {
   const router = createTanStackRouter({
@@ -70,18 +73,18 @@ export const getRouter = () => {
         {children}
       </TRPCProvider>
     ),
-  });
+  })
 
   setupRouterSsrQueryIntegration({
     router,
     queryClient,
-  });
+  })
 
-  return router;
-};
+  return router
+}
 
 declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof getRouter>;
+    router: ReturnType<typeof getRouter>
   }
 }

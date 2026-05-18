@@ -1,7 +1,6 @@
 import * as React from "react"
 import { useForm } from "@tanstack/react-form"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { toast } from "sonner"
 import z from "zod"
 
 import { Button } from "@tome/ui/components/button"
@@ -15,6 +14,7 @@ import {
 } from "@tome/ui/components/card"
 import { Input } from "@tome/ui/components/input"
 import { Label } from "@tome/ui/components/label"
+import { toast } from "@tome/ui/sonner"
 
 import { authClient } from "@/lib/auth-client"
 

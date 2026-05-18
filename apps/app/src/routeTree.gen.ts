@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TodosRouteImport } from './routes/todos'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
@@ -23,11 +22,6 @@ import { Route as AppCollectionsIndexRouteImport } from './routes/_app/collectio
 import { Route as AppBookmarksIndexRouteImport } from './routes/_app/bookmarks/index'
 import { Route as AppArchiveIndexRouteImport } from './routes/_app/archive/index'
 
-const TodosRoute = TodosRouteImport.update({
-  id: '/todos',
-  path: '/todos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -90,7 +84,6 @@ const AppArchiveIndexRoute = AppArchiveIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/dashboard': typeof DashboardRoute
-  '/todos': typeof TodosRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/archive/': typeof AppArchiveIndexRoute
@@ -103,7 +96,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/dashboard': typeof DashboardRoute
-  '/todos': typeof TodosRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/archive': typeof AppArchiveIndexRoute
@@ -118,7 +110,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteRouteWithChildren
   '/_auth': typeof AuthRouteRouteWithChildren
   '/dashboard': typeof DashboardRoute
-  '/todos': typeof TodosRoute
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
@@ -134,7 +125,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
-    | '/todos'
     | '/sign-in'
     | '/sign-up'
     | '/archive/'
@@ -147,7 +137,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
-    | '/todos'
     | '/sign-in'
     | '/sign-up'
     | '/archive'
@@ -161,7 +150,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/dashboard'
-    | '/todos'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_app/'
@@ -177,18 +165,10 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   DashboardRoute: typeof DashboardRoute
-  TodosRoute: typeof TodosRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/todos': {
-      id: '/todos'
-      path: '/todos'
-      fullPath: '/todos'
-      preLoaderRoute: typeof TodosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -318,7 +298,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   DashboardRoute: DashboardRoute,
-  TodosRoute: TodosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
