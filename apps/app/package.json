@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@base-ui/react": "^1.4.0",
     "@prisma/client": "catalog:",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-form": "^1.28.0",
@@ -28,13 +27,12 @@
     "@trpc/server": "catalog:",
     "@trpc/tanstack-react-query": "^11.16.0",
     "better-auth": "catalog:",
-    "cmdk": "^1.1.1",
+    "date-fns": "^4.2.1",
     "dotenv": "catalog:",
-    "lucide-react": "^1.8.0",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "sonner": "^2.0.7",
+    "react-intersection-observer": "^10.0.3",
     "tailwindcss": "^4.2.2",
     "zod": "catalog:",
     "zustand": "^5.0.12"

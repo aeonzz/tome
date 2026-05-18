@@ -6,6 +6,7 @@
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
+    "./sonner": "./src/sonner.ts",
     "./icons": "./src/icons.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
@@ -20,7 +21,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk-base": "^1.0.0",
-    "lucide-react": "^0.546.0",
     "next-themes": "catalog:",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
